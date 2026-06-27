@@ -161,21 +161,23 @@ export default function ReportIssue() {
         });
       }
 
-      // Geocode the location address at submit time to ensure coordinates are updated
+      // Geocode the location address on submit only if coordinates are still at default center
       let finalLat = lat;
       let finalLng = lng;
-      try {
-        const response = await fetch(
-          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(location)}&limit=1`,
-          { headers: { 'Accept-Language': 'en' } }
-        );
-        const data = await response.json();
-        if (data && data.length > 0) {
-          finalLat = parseFloat(data[0].lat);
-          finalLng = parseFloat(data[0].lon);
+      if (lat === 12.9716 && lng === 77.5946 && location) {
+        try {
+          const response = await fetch(
+            `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(location)}&limit=1`,
+            { headers: { 'Accept-Language': 'en' } }
+          );
+          const data = await response.json();
+          if (data && data.length > 0) {
+            finalLat = parseFloat(data[0].lat);
+            finalLng = parseFloat(data[0].lon);
+          }
+        } catch (err) {
+          console.error("Geocoding during submit failed:", err);
         }
-      } catch (err) {
-        console.error("Geocoding during submit failed:", err);
       }
 
       const reporterName = user ? user.name : 'Anonymous Volunteer';
