@@ -109,6 +109,21 @@ export default function CitizenDashboard() {
   const [selectedMapReport, setSelectedMapReport] = useState(null);
   const { t } = useTranslation();
 
+  const [theme, setTheme] = useState(() => {
+    return document.documentElement.classList.contains('dark') ? 'dark' : 'light';
+  });
+
+  useEffect(() => {
+    const handleThemeChange = () => {
+      const isDark = document.documentElement.classList.contains('dark');
+      setTheme(isDark ? 'dark' : 'light');
+    };
+    window.addEventListener('mock-auth-state-change', handleThemeChange);
+    return () => {
+      window.removeEventListener('mock-auth-state-change', handleThemeChange);
+    };
+  }, []);
+
   // Submit report modal simulation
   const [isReporting, setIsReporting] = useState(false);
   const [newTitle, setNewTitle] = useState('');
@@ -261,6 +276,34 @@ export default function CitizenDashboard() {
             setSelectedMapReport(report);
           });
 
+          // Hover interactions
+          marker.on('mouseover', () => {
+            setSelectedMapReport(report);
+          });
+
+          // Bind interactive tooltip on hover
+          marker.bindTooltip(`
+            <div style="
+              padding: 6px 10px; 
+              font-family: 'Plus Jakarta Sans', system-ui, sans-serif; 
+              font-size: 11px; 
+              border-radius: 8px; 
+              box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
+              border: 1px solid ${theme === 'light' ? '#e2e8f0' : '#1e293b'};
+              background-color: ${theme === 'light' ? '#ffffff' : '#0f172a'};
+              color: ${theme === 'light' ? '#0f172a' : '#ffffff'};
+            ">
+              <span style="color: ${color}; text-transform: uppercase; font-size: 8px; font-weight: 900; letter-spacing: 0.05em; display: block;">${t(report.category)}</span>
+              <strong style="display: block; margin-top: 2px; font-weight: 700; color: ${theme === 'light' ? '#0f172a' : '#ffffff'};">${t(report.title)}</strong>
+              <span style="display: block; font-size: 9px; color: ${theme === 'light' ? '#475569' : '#94a3b8'}; margin-top: 1px;">${t("Severity")}: ${t(report.severity || 'Medium')}</span>
+            </div>
+          `, {
+            direction: 'top',
+            offset: [0, -10],
+            opacity: 0.95,
+            className: 'custom-map-tooltip'
+          });
+
           markersRef.current.push(marker);
         });
 
@@ -276,7 +319,7 @@ export default function CitizenDashboard() {
         mapInstance.current = null;
       }
     };
-  }, [viewMode, statusFilter, reports]);
+  }, [viewMode, statusFilter, reports, theme]);
 
   const getStats = () => {
     const submitted = reports.filter(r => r.status === 'Submitted').length;
@@ -442,20 +485,20 @@ export default function CitizenDashboard() {
 
           <div className="space-y-4">
             {viewMode === 'map' ? (
-              <div className="glass p-4 rounded-3xl border border-slate-800/60 relative w-full h-[500px] bg-slate-950 overflow-hidden flex flex-col justify-between" onClick={() => setSelectedMapReport(null)}>
+              <div className={`glass p-4 rounded-3xl border relative w-full h-[500px] overflow-hidden flex flex-col justify-between transition-all duration-300 ${theme === 'light' ? 'bg-slate-50/90 border-slate-200 shadow-lg' : 'bg-slate-950 border-slate-800/60'}`} onClick={() => setSelectedMapReport(null)}>
                 
                 {/* Leaflet Map Target Element */}
-                <div id="leaflet-map-container" className="absolute inset-0 z-0 w-full h-full" style={{ background: '#070b13' }} />
+                <div id="leaflet-map-container" className="absolute inset-0 z-0 w-full h-full" style={{ background: theme === 'light' ? '#f8fafc' : '#070b13' }} />
 
                 {/* Map Top Header bar */}
-                <div className="flex justify-between items-center z-10 bg-slate-900/90 backdrop-blur-md p-3 rounded-2xl border border-slate-800/50 shadow-md">
+                <div className={`flex justify-between items-center z-10 backdrop-blur-md p-3 rounded-2xl border shadow-md transition-all duration-300 ${theme === 'light' ? 'bg-white/95 border-slate-200' : 'bg-slate-900/95 border-slate-800/50'}`}>
                   <div className="text-left">
-                    <span className="text-[9px] text-brand-400 font-black uppercase tracking-widest block">{t("Jaan Sathi GIS Mapping")}</span>
-                    <span className="text-[10px] text-slate-350 font-bold block">{t("Real-time GPS Incident Tracker (70km Limit)")}</span>
+                    <span className={`text-[9px] font-black uppercase tracking-widest block transition-colors duration-300 ${theme === 'light' ? 'text-blue-600' : 'text-brand-400'}`}>{t("Jaan Sathi GIS Mapping")}</span>
+                    <span className={`text-[10px] font-bold block transition-colors duration-300 ${theme === 'light' ? 'text-blue-950/80' : 'text-slate-350'}`}>{t("Real-time GPS Incident Tracker (70km Limit)")}</span>
                   </div>
                   
                   {/* Map Legend */}
-                  <div className="flex items-center gap-3 text-[9px] font-bold text-slate-400">
+                  <div className={`flex items-center gap-3 text-[9px] font-bold transition-colors duration-300 ${theme === 'light' ? 'text-blue-900/80' : 'text-slate-400'}`}>
                     <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse" />{t("Critical")}</span>
                     <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-amber-500" />{t("High")}</span>
                     <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-blue-500" />{t("Medium")}</span>
@@ -464,21 +507,21 @@ export default function CitizenDashboard() {
                 </div>
 
                 {/* Bottom Info Dialog */}
-                <div className="z-10 bg-slate-950/95 border border-slate-800/80 p-4 rounded-2xl shadow-2xl backdrop-blur-md w-full md:max-w-md mx-auto text-left relative" onClick={(e) => e.stopPropagation()}>
+                <div className={`z-10 border p-4 rounded-2xl shadow-2xl backdrop-blur-md w-full md:max-w-md mx-auto text-left relative transition-all duration-300 ${theme === 'light' ? 'bg-white/95 border-slate-200' : 'bg-slate-950/95 border-slate-800/80'}`} onClick={(e) => e.stopPropagation()}>
                   {selectedMapReport ? (
                     <div className="space-y-2.5 animate-fade-in">
                       <button 
                         type="button"
                         onClick={() => setSelectedMapReport(null)}
-                        className="absolute top-2.5 right-2.5 text-slate-550 hover:text-slate-350 cursor-pointer"
+                        className={`absolute top-2.5 right-2.5 cursor-pointer transition-colors ${theme === 'light' ? 'text-slate-400 hover:text-slate-600' : 'text-slate-550 hover:text-slate-350'}`}
                       >
                         <X className="w-4 h-4" />
                       </button>
 
                       <div className="flex justify-between items-start gap-3">
                         <div>
-                          <span className="text-[9px] font-black text-brand-400 uppercase tracking-widest">{t(selectedMapReport.category)}</span>
-                          <h4 className="font-extrabold text-sm text-white mt-0.5">{t(selectedMapReport.title)}</h4>
+                          <span className={`text-[9px] font-black uppercase tracking-widest transition-colors duration-300 ${theme === 'light' ? 'text-blue-600' : 'text-brand-400'}`}>{t(selectedMapReport.category)}</span>
+                          <h4 className={`font-extrabold text-sm mt-0.5 transition-colors duration-300 ${theme === 'light' ? 'text-blue-950' : 'text-white'}`}>{t(selectedMapReport.title)}</h4>
                         </div>
                         <span className={`px-2 py-0.5 rounded-full border text-[8px] font-black uppercase ${
                           selectedMapReport.severity === 'Critical' ? 'bg-rose-500/10 text-rose-455 border-rose-500/30' :
@@ -490,11 +533,11 @@ export default function CitizenDashboard() {
                         </span>
                       </div>
 
-                      <p className="text-[11px] text-slate-400 line-clamp-2 leading-relaxed">{t(selectedMapReport.description)}</p>
+                      <p className={`text-[11px] line-clamp-2 leading-relaxed transition-colors duration-300 ${theme === 'light' ? 'text-blue-900/80' : 'text-slate-400'}`}>{t(selectedMapReport.description)}</p>
 
-                      <div className="flex items-center justify-between text-[9px] font-bold pt-2 border-t border-slate-800/50">
-                        <span className="flex items-center gap-1 text-slate-455 truncate pr-2">
-                          <MapPin className="w-3 h-3 text-slate-550 shrink-0" />
+                      <div className={`flex items-center justify-between text-[9px] font-bold pt-2 border-t transition-colors duration-300 ${theme === 'light' ? 'border-slate-200' : 'border-slate-800/50'}`}>
+                        <span className={`flex items-center gap-1 truncate pr-2 transition-colors duration-300 ${theme === 'light' ? 'text-blue-900' : 'text-slate-455'}`}>
+                          <MapPin className={`w-3 h-3 shrink-0 transition-colors duration-300 ${theme === 'light' ? 'text-blue-600' : 'text-slate-550'}`} />
                           <span className="truncate">{t(selectedMapReport.location)}</span>
                         </span>
                         <button 
@@ -507,16 +550,16 @@ export default function CitizenDashboard() {
                               if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
                             }, 100);
                           }}
-                          className="text-blue-400 hover:text-blue-300 flex items-center gap-0.5 cursor-pointer font-extrabold uppercase tracking-wide shrink-0"
+                          className={`flex items-center gap-0.5 cursor-pointer font-extrabold uppercase tracking-wide shrink-0 transition-colors duration-300 ${theme === 'light' ? 'text-blue-600 hover:text-blue-700' : 'text-blue-400 hover:text-blue-300'}`}
                         >
                           {t("Open Details")} →
                         </button>
                       </div>
                     </div>
                   ) : (
-                    <div className="text-center py-2 text-slate-500 text-xs font-semibold flex items-center justify-center gap-1.5">
+                    <div className={`text-center py-2 text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors duration-300 ${theme === 'light' ? 'text-blue-900/70' : 'text-slate-500'}`}>
                       <Sparkles className="w-4 h-4 text-blue-500 animate-pulse" />
-                      <span>{t("Click any GPS pin on the map to inspect issue details.")}</span>
+                      <span>{t("Click or hover on any GPS pin on the map to inspect issue details.")}</span>
                     </div>
                   )}
                 </div>
