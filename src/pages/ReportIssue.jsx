@@ -132,6 +132,23 @@ export default function ReportIssue() {
         });
       }
 
+      // Geocode the location address at submit time to ensure coordinates are updated
+      let finalLat = lat;
+      let finalLng = lng;
+      try {
+        const response = await fetch(
+          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(location)}&limit=1`,
+          { headers: { 'Accept-Language': 'en' } }
+        );
+        const data = await response.json();
+        if (data && data.length > 0) {
+          finalLat = parseFloat(data[0].lat);
+          finalLng = parseFloat(data[0].lon);
+        }
+      } catch (err) {
+        console.error("Geocoding during submit failed:", err);
+      }
+
       const reporterName = user ? user.name : 'Anonymous Volunteer';
       const reporterAvatar = user ? user.avatar : null;
       await createReport(
@@ -144,8 +161,8 @@ export default function ReportIssue() {
         reporterAvatar,
         priorityScore,
         severity,
-        lat,
-        lng
+        finalLat,
+        finalLng
       );
       setSubmitted(true);
     } catch (error) {
