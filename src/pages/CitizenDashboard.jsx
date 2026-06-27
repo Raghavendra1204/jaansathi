@@ -90,6 +90,7 @@ export default function CitizenDashboard() {
   const navigate = useNavigate();
   const [reports, setReports] = useState(MOCK_REPORTS);
   const [expandedReportId, setExpandedReportId] = useState(null);
+  const [statusFilter, setStatusFilter] = useState('All'); // 'All', 'Submitted', 'Pending', 'Resolved'
   const [activeTab, setActiveTab] = useState('dashboard'); // 'dashboard', 'report', 'messages', 'settings'
   const { t } = useTranslation();
 
@@ -127,11 +128,14 @@ export default function CitizenDashboard() {
   };
 
   const getStats = () => {
-    const total = reports.length + 8; // Including old archived reports
-    const resolved = reports.filter(r => r.status === 'Resolved').length + 8;
-    const pending = reports.filter(r => r.status === 'Pending' || r.status === 'Submitted').length;
-    const points = user ? user.xp : 2450;
-    return { total, pending, resolved, points };
+    const submitted = reports.filter(r => r.status === 'Submitted').length;
+    const pending = reports.filter(r => r.status === 'Pending').length;
+    const resolved = reports.filter(r => r.status === 'Resolved').length;
+    
+    // Dynamic points calculation
+    const points = (user?.xp || 1500) + (resolved * 50);
+    
+    return { submitted, pending, resolved, points };
   };
 
   const stats = getStats();
@@ -161,20 +165,34 @@ export default function CitizenDashboard() {
       </section>
 
       {/* Statistics Cards (Grid of 4) */}
-      <section className="grid grid-cols-2 lg:grid-cols-4 gap-4 text-left">
+      <section className="grid grid-cols-2 lg:grid-cols-4 gap-4 text-left select-none">
         {/* Reports Submitted */}
-        <div className="glass p-5 rounded-2xl border border-slate-800/60 flex items-center gap-4 hover:border-blue-500/20 transition-all">
+        <div 
+          onClick={() => setStatusFilter(statusFilter === 'Submitted' ? 'All' : 'Submitted')}
+          className={`glass p-5 rounded-2xl border flex items-center gap-4 transition-all cursor-pointer hover:scale-[1.01] ${
+            statusFilter === 'Submitted'
+              ? 'border-blue-500 ring-2 ring-blue-500/10 shadow-md bg-blue-50/10'
+              : 'border-slate-800/60 hover:border-blue-500/20'
+          }`}
+        >
           <div className="p-3 bg-blue-500/10 text-blue-400 rounded-xl">
             <FileText className="w-5 h-5" />
           </div>
           <div>
             <span className="block text-[10px] text-slate-400 font-bold uppercase tracking-wider">{t("Submitted")}</span>
-            <span className="text-xl md:text-2xl font-extrabold text-white block mt-0.5">{stats.total}</span>
+            <span className="text-xl md:text-2xl font-extrabold text-white block mt-0.5">{stats.submitted}</span>
           </div>
         </div>
 
         {/* Pending */}
-        <div className="glass p-5 rounded-2xl border border-slate-800/60 flex items-center gap-4 hover:border-amber-500/20 transition-all">
+        <div 
+          onClick={() => setStatusFilter(statusFilter === 'Pending' ? 'All' : 'Pending')}
+          className={`glass p-5 rounded-2xl border flex items-center gap-4 transition-all cursor-pointer hover:scale-[1.01] ${
+            statusFilter === 'Pending'
+              ? 'border-amber-500 ring-2 ring-amber-500/10 shadow-md bg-amber-50/10'
+              : 'border-slate-800/60 hover:border-amber-500/20'
+          }`}
+        >
           <div className="p-3 bg-amber-500/10 text-amber-400 rounded-xl">
             <Clock className="w-5 h-5" />
           </div>
@@ -185,7 +203,14 @@ export default function CitizenDashboard() {
         </div>
 
         {/* Resolved */}
-        <div className="glass p-5 rounded-2xl border border-slate-800/60 flex items-center gap-4 hover:border-emerald-500/20 transition-all">
+        <div 
+          onClick={() => setStatusFilter(statusFilter === 'Resolved' ? 'All' : 'Resolved')}
+          className={`glass p-5 rounded-2xl border flex items-center gap-4 transition-all cursor-pointer hover:scale-[1.01] ${
+            statusFilter === 'Resolved'
+              ? 'border-emerald-500 ring-2 ring-emerald-500/10 shadow-md bg-emerald-50/10'
+              : 'border-slate-800/60 hover:border-emerald-500/20'
+          }`}
+        >
           <div className="p-3 bg-emerald-500/10 text-emerald-400 rounded-xl">
             <CheckCircle className="w-5 h-5" />
           </div>
@@ -196,7 +221,7 @@ export default function CitizenDashboard() {
         </div>
 
         {/* Community Points */}
-        <div className="glass p-5 rounded-2xl border border-slate-800/60 flex items-center gap-4 hover:border-purple-500/20 transition-all">
+        <div className="glass p-5 rounded-2xl border border-slate-800/60 flex items-center gap-4 hover:border-purple-500/20 transition-all hover:scale-[1.01]">
           <div className="p-3 bg-purple-500/10 text-purple-400 rounded-xl">
             <Award className="w-5 h-5" />
           </div>
@@ -215,7 +240,11 @@ export default function CitizenDashboard() {
           <div className="flex justify-between items-center border-b border-slate-800/60 pb-3">
             <div className="text-left">
               <h2 className="text-xl font-bold text-white tracking-tight">{t("Recent Activity")}</h2>
-              <p className="text-slate-400 text-xs mt-0.5">{t("Municipal reports posted by you")}</p>
+              <p className="text-slate-400 text-xs mt-0.5 font-medium">
+                {statusFilter === 'All' 
+                  ? t("Municipal reports posted by you") 
+                  : `${t("Showing filtered reports:")} ${t(statusFilter)}`}
+              </p>
             </div>
             <button
               onClick={() => navigate('/report-issue')}
@@ -227,7 +256,22 @@ export default function CitizenDashboard() {
           </div>
 
           <div className="space-y-4">
-            {reports.map((report) => (
+            {reports.filter(r => statusFilter === 'All' || r.status === statusFilter).length === 0 ? (
+              <div className="p-12 text-center bg-slate-900/10 border border-dashed border-slate-800/40 rounded-2xl text-slate-500 space-y-2">
+                <Clock className="w-8 h-8 mx-auto text-slate-650 animate-pulse" />
+                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">{t("No Reports Found")}</h4>
+                <p className="text-[11px] text-slate-550 max-w-xs mx-auto">{t("No reports in your workspace timeline match the selected status category filter.")}</p>
+                <button 
+                  onClick={() => setStatusFilter('All')} 
+                  className="mt-3 py-1.5 px-3 bg-slate-900 border border-slate-800 hover:bg-slate-800 text-blue-400 hover:text-blue-300 font-bold text-xs rounded-xl transition-all cursor-pointer"
+                >
+                  {t("Clear status filter")}
+                </button>
+              </div>
+            ) : (
+              reports
+                .filter(r => statusFilter === 'All' || r.status === statusFilter)
+                .map((report) => (
               <div 
                 key={report.id}
                 onClick={() => setExpandedReportId(expandedReportId === report.id ? null : report.id)}
@@ -467,7 +511,7 @@ export default function CitizenDashboard() {
                   </div>
                 )}
               </div>
-            ))}
+            )))}
           </div>
         </section>
 
