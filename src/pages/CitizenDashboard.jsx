@@ -24,7 +24,11 @@ const MOCK_REPORTS = [
     resolvedDate: '2026-06-26',
     resolvedBy: 'Officer Sandeep Kumar',
     resolutionTime: '18 Hours',
-    resolutionCost: '₹2,400'
+    resolutionCost: '₹2,400',
+    severity: 'Medium',
+    priorityScore: 35,
+    officerNote: 'Bulb replaced. Main electrical grid connector checked and verified functional.',
+    laborUsed: '2 Electrician Engineers, 1 Utility Lift Vehicle'
   },
   {
     id: 'rep-02',
@@ -38,7 +42,10 @@ const MOCK_REPORTS = [
     statusColor: 'bg-amber-500/10 text-amber-400 border-amber-500/30',
     assignedOfficer: 'Officer Ramesh Prasad',
     estimatedTime: '48 Hours',
-    estimatedCost: '₹15,000'
+    estimatedCost: '₹15,000',
+    severity: 'Critical',
+    priorityScore: 82,
+    officerNote: 'Inspected pothole size. Confirmed traffic hazard risk. Dispatched road crew to lay temporary asphalt repair.'
   },
   {
     id: 'rep-03',
@@ -53,7 +60,11 @@ const MOCK_REPORTS = [
     resolvedDate: '2026-06-20',
     resolvedBy: 'Officer Ananya Sen',
     resolutionTime: '24 Hours',
-    resolutionCost: '₹1,200'
+    resolutionCost: '₹1,200',
+    severity: 'Low',
+    priorityScore: 20,
+    officerNote: 'Dispatched sanitation waste collector. Cleared surrounding trash piles. Dumpster cleaned and sanitized.',
+    laborUsed: '3 Sanitation Workers, 1 Waste Compactor Truck'
   },
   {
     id: 'rep-04',
@@ -67,7 +78,10 @@ const MOCK_REPORTS = [
     statusColor: 'bg-blue-500/10 text-blue-400 border-blue-500/30',
     assignedOfficer: 'Officer Vikram Rathore',
     estimatedTime: '72 Hours',
-    estimatedCost: '₹45,000'
+    estimatedCost: '₹45,000',
+    severity: 'High',
+    priorityScore: 65,
+    officerNote: 'Initial assessment completed. Guardrail damage verified. Awaiting work-crew schedule slots.'
   }
 ];
 
@@ -379,6 +393,75 @@ export default function CitizenDashboard() {
                               : 'text-slate-400 dark:text-slate-600'
                           }`}>{t("Completed")}</span>
                         </div>
+                      </div>
+                    </div>
+
+                    {/* Resolution Audit Trail Logs */}
+                    <div className="space-y-3 mt-5 pt-4 border-t border-slate-800/40">
+                      <span className="block text-[9px] text-slate-500 font-bold uppercase tracking-wider text-left">{t("Resolution Activity Audit Logs")}</span>
+                      
+                      <div className="relative border-l-2 border-slate-200 dark:border-slate-800 ml-4 pl-6 space-y-5 text-left">
+                        
+                        {/* Log Item 1: Submitted */}
+                        <div className="relative">
+                          <span className="absolute -left-[31px] top-0.5 w-4.5 h-4.5 rounded-full bg-brand-500 border border-brand-400 text-white flex items-center justify-center text-[9px] font-bold">1</span>
+                          <div>
+                            <span className="block text-[10px] font-bold text-slate-700 dark:text-brand-300 uppercase">{t("Step 1: Submission Received")}</span>
+                            <div className="mt-1 text-[11px] text-slate-500 dark:text-slate-400 space-y-1">
+                              <p>• <strong>{t("Report Date/Time")}:</strong> {formatDate(report.date)} 09:30 AM</p>
+                              <p>• <strong>{t("Report Location")}:</strong> {t(report.location)}</p>
+                              <p>• <strong>{t("Initial Severity")}:</strong> {t(report.severity || "Medium")}</p>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Log Item 2: Reviewed */}
+                        {(report.status === 'Pending' || report.status === 'Assigned' || report.status === 'In Progress' || report.status === 'Resolved') && (
+                          <div className="relative">
+                            <span className="absolute -left-[31px] top-0.5 w-4.5 h-4.5 rounded-full bg-brand-500 border border-brand-400 text-white flex items-center justify-center text-[9px] font-bold">2</span>
+                            <div>
+                              <span className="block text-[10px] font-bold text-slate-700 dark:text-brand-300 uppercase">{t("Step 2: Official Review Completed")}</span>
+                              <div className="mt-1 text-[11px] text-slate-500 dark:text-slate-400 space-y-1">
+                                <p>• <strong>{t("Reviewed By")}:</strong> {t(report.resolvedBy || report.assignedOfficer || "Officer Sandeep Kumar")}</p>
+                                <p>• <strong>{t("Department")}:</strong> {t(report.category === 'Roads & Safety' ? 'Public Works' : report.category === 'Sanitation' ? 'Health & Environment' : 'Municipal Infrastructure')}</p>
+                                <p>• <strong>{t("Officer Action Note")}:</strong> {t(report.officerNote || "Confirmed report details. Dispatched field assessment crew to verify hazard limits.")}</p>
+                                <p>• <strong>{t("AI Priority Rating")}:</strong> Score {report.priorityScore || 35} ({t("Auto-calculated based on public safety impact")})</p>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Log Item 3: Under Maintenance */}
+                        {(report.status === 'Assigned' || report.status === 'In Progress' || report.status === 'Resolved') && (
+                          <div className="relative">
+                            <span className="absolute -left-[31px] top-0.5 w-4.5 h-4.5 rounded-full bg-brand-500 border border-brand-400 text-white flex items-center justify-center text-[9px] font-bold">3</span>
+                            <div>
+                              <span className="block text-[10px] font-bold text-slate-700 dark:text-brand-300 uppercase">{t("Step 3: Maintenance Works Dispatched")}</span>
+                              <div className="mt-1 text-[11px] text-slate-500 dark:text-slate-400 space-y-1">
+                                <p>• <strong>{t("Dispatch Time")}:</strong> {formatDate(report.resolvedDate || report.date)} 02:00 PM</p>
+                                <p>• <strong>{t("Assigned Contractor")}:</strong> {t("District Civil Maintenance Works")}</p>
+                                <p>• <strong>{t("Operations Note")}:</strong> {t("Work crew is on-site. Temporary safety barriers have been erected.")}</p>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Log Item 4: Completed */}
+                        {report.status === 'Resolved' && (
+                          <div className="relative">
+                            <span className="absolute -left-[31px] top-0.5 w-4.5 h-4.5 rounded-full bg-emerald-500 border border-emerald-400 text-white flex items-center justify-center text-[9px] font-bold">✓</span>
+                            <div>
+                              <span className="block text-[10px] font-bold text-emerald-500 uppercase">{t("Step 4: Issue Resolved")}</span>
+                              <div className="mt-1 text-[11px] text-slate-500 dark:text-slate-400 space-y-1">
+                                <p>• <strong>{t("Completion Time")}:</strong> {formatDate(report.resolvedDate)} 05:45 PM</p>
+                                <p>• <strong>{t("Resolution Cost")}:</strong> {t(report.resolutionCost)}</p>
+                                <p>• <strong>{t("Labor & Resources Used")}:</strong> {t(report.laborUsed || "3 Crew Workers, 1 Utility Dispatch Vehicle")}</p>
+                                <p>• <strong>{t("Final Audit Status")}:</strong> {t("Public utility operations verified safe. Case closed.")}</p>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
                       </div>
                     </div>
                   </div>
